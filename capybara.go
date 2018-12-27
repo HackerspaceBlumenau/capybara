@@ -1,69 +1,59 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 
 	"github.com/eventials/goawaysignals"
+	"github.com/hackerspaceblumenau/capybara/commands"
+	"github.com/hackerspaceblumenau/capybara/contracts"
 	"github.com/hackerspaceblumenau/capybara/slack"
 	"github.com/hackerspaceblumenau/capybara/storage/drivers"
-	"github.com/hackerspaceblumenau/capybara/contracts"
-	"github.com/hackerspaceblumenau/capybara/commands"
 	"github.com/hackerspaceblumenau/capybara/ticker"
 )
 
-var (
-	slackToken            = flag.String("token", "", "Slack token to use for integration")
-	commandsServerAddress = flag.String("address", "0.0.0.0", "Command server address listener")
-	commandsServerPort    = flag.Int("port", 8080, "Command server port listener")
-)
-
 func printHelp() {
-	msg := `
-Capybara (c) Hackerspace Blumenau Org.
--------------------------------------`
+	msg := `Capybara (c) Hackerspace Blumenau Org.
+-------------------------------------
+Environment:
+ SLACK_TOKEN: token used to connect to slack api
+ SERVER_ADDR: address where server will listen to (default localhost)
+ SERVER_PORT: port where server will listen to (default 8080)`
 
 	fmt.Println(msg)
-	flag.Usage()
-}
-
-func invalidFlags() bool {
-	if *slackToken == "" {
-		return true
-	}
-
-	if *commandsServerAddress == "" {
-		return true
-	}
-
-	if *commandsServerPort <= 0 {
-		return true
-	}
-
-	return false
 }
 
 func main() {
-	flag.Parse()
-
-	if invalidFlags() {
+	slackToken := os.Getenv("SLACK_TOKEN")
+	if slackToken == "" {
 		printHelp()
 		return
 	}
 
-    slack.Setup(*slackToken)
+	commandsServerAddress := os.Getenv("SERVER_ADDR")
+	if commandsServerAddress == "" {
+		commandsServerAddress = "localhost"
+	}
 
-    st := drivers.MemoryStorage{}
+	commandsServerPort, _ := strconv.Atoi(os.Getenv("SERVER_PORT"))
+	if commandsServerPort == 0 {
+		commandsServerPort = 8080
+	}
+
+	slack.Setup(slackToken)
+
+	st := drivers.MemoryStorage{}
 
 	servers := []contracts.Server{
 		commands.NewServer(
-            st,
+			st,
 			commands.RunOptions{
-				Address: *commandsServerAddress,
-				Port:    *commandsServerPort,
+				Address: commandsServerAddress,
+				Port:    commandsServerPort,
 			}),
-        ticker.NewServer(st),
+		ticker.NewServer(st),
 	}
 
 	for _, srv := range servers {
