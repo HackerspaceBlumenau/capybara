@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -14,22 +13,10 @@ import (
 	"github.com/hackerspaceblumenau/capybara/ticker"
 )
 
-func printHelp() {
-	msg := `Capybara (c) Hackerspace Blumenau Org.
--------------------------------------
-Environment:
- SLACK_TOKEN: token used to connect to slack api
- SERVER_ADDR: address where server will listen to (default localhost)
- SERVER_PORT: port where server will listen to (default 8080)`
-
-	fmt.Println(msg)
-}
-
 func main() {
 	slackToken := os.Getenv("SLACK_TOKEN")
 	if slackToken == "" {
-		printHelp()
-		return
+		log.Fatal("SLACK_TOKEN environment variable is empty")
 	}
 
 	commandsServerAddress := os.Getenv("SERVER_ADDR")
